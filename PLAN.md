@@ -18,8 +18,8 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 | S8 | Agent loop (Observe → Reason → Select → Execute → Interpret) | ✅ |
 | S9 | Findings, rule catalogue, evidence verification, report builder | ✅ |
 | S10 | System prompt & DevOps knowledge | ✅ |
-| S11 | Tracing, logging & error handling hardening | 🟡 awaiting verification |
-| S12 | Automated tests | ⬜ |
+| S11 | Tracing, logging & error handling hardening | ✅ |
+| S12 | Automated tests | ✅ |
 | S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ⬜ |
 | S14 | README, sample_report.json, final polish | ⬜ |
 | S15 | Publish to public GitHub | ⬜ |
@@ -145,6 +145,8 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 - CLI tests: bad URL → non-zero, output JSON valid.
 - No network or API key needed for the test suite.
 - **Verify:** `pytest -q` all green; `ruff check .` clean.
+- Done: network guard, coverage 97 %, edge-case and end-to-end tests, GitHub Actions CI.
+- Decisions: D29.
 
 ## S13 — Evaluation fixtures & tuning
 - Build 3 local/public test repos mirroring the hidden evaluation: (A) obvious defects,

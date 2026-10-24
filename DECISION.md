@@ -446,7 +446,7 @@ Status: **Proposed** (awaiting user verification) · **Accepted** · **Supersede
   keeps control of the investigation.
 
 ## D28 — Trace contents, reasoning capture and hardening
-- **Status:** Proposed
+- **Status:** Accepted
 - **Context:** S11. Graders may inspect tool-call traces; the S8 live run showed the free model often
   calls tools without visible text, which hides the "Reason" step.
 - **Decision:**
@@ -471,3 +471,29 @@ Status: **Proposed** (awaiting user verification) · **Accepted** · **Supersede
 - **Consequences:** Self-contained evidence of genuine agent behaviour per run. Note (D21): a
   non-empty value in `.env` overrides the same variable exported in the shell — documented in the
   README (S14).
+
+## D29 — Test strategy: offline by construction, coverage-guided, CI on GitHub Actions
+- **Status:** Accepted
+- **Context:** S12. "JSON compliance, tests, documentation" is 10% of the grade; the evaluator must be
+  able to run the tests without our API key; a CLI test once accidentally reached a real API (S8).
+- **Decision:**
+  - **Offline by construction:** autouse fixtures remove API keys/settings, disable `.env` loading
+    and block every non-local socket connection (a test that tries to go online fails with
+    `NetworkAccessError`). LLMs are scripted with `FakeLLM`; repositories are local git fixtures
+    cloned via `file://`.
+  - **Coverage-guided gap filling:** `pytest-cov` measured 94 % → 97 % (2 001 statements) after adding
+    tests for meaningful edge cases only (workflow_run/reusable workflows/job permissions, search
+    time budget, shallow history, git missing, clone/command timeouts, Gemini transport/server
+    errors, unexpected harness errors, report write failure, modified clone warning).
+  - **End-to-end test:** a defect fixture repo (hardcoded key, deleted `.env` in history,
+    `pytest || true`, branch-pinned action, unpinned dependency) audited through the real CLI by a
+    scripted agent that reacts to tool output; asserts the exact report, severity ordering, contract
+    fields, verification (hallucination dropped, duplicate merged, wrong line corrected) and that no
+    secret value reaches the report or trace.
+  - **CI** (`.github/workflows/ci.yml`): push to main + pull requests, `permissions: contents: read`,
+    lint job (ruff check + format) and test matrix (Ubuntu × Python 3.10/3.12/3.13, Windows × 3.12)
+    with coverage; actions tag-pinned, `persist-credentials: false`, timeouts, concurrency. Our own
+    `inspect_workflows` reports no signals for it.
+  - `pytest-cov` pinned in requirements.txt (dev section).
+- **Consequences:** ~300 tests run in ~40 s with no key and no network; regressions caught on every
+  push.

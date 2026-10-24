@@ -28,6 +28,9 @@ Source of truth for requirements: `Assignment_2_DevOps_Repository_Auditing_Agent
    in the PLAN step that uses it. Never renumber existing decisions; supersede them instead.
 4. If a step reveals the plan is wrong, update PLAN.md (and add a decision) rather than silently
    deviating.
+5. **Git:** from S12 on, once the user has verified a step, make one commit for that step (message
+   names the step, e.g. "... (S12)") and push to `origin main`
+   (https://github.com/Myt1x54/devops-repo-auditor). Never commit `.env`, `runs/` or the PDF.
 
 ## Hard constraints (from the assignment — never violate)
 - **No agent/orchestration frameworks**: no LangChain, LangGraph, n8n, CrewAI, AutoGen, LlamaIndex

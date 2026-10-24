@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import socket
 import subprocess
 from pathlib import Path
 
@@ -22,6 +23,26 @@ def isolate_from_real_settings(monkeypatch):
     for name in _REAL_SETTINGS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr("agent.load_env", lambda *a, **k: [])
+
+
+class NetworkAccessError(RuntimeError):
+    pass
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Fail any test that opens a non-local network connection (git clones use file:// URLs)."""
+    real_connect = socket.socket.connect
+
+    def guarded_connect(self, address):
+        host = address[0] if isinstance(address, tuple) else address
+        if host in ("127.0.0.1", "::1", "localhost") or self.family == getattr(
+            socket, "AF_UNIX", -1
+        ):
+            return real_connect(self, address)
+        raise NetworkAccessError(f"test tried to open a network connection to {address!r}")
+
+    monkeypatch.setattr(socket.socket, "connect", guarded_connect)
 
 
 def _git(cwd: Path, *args: str) -> None:
