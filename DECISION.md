@@ -567,3 +567,22 @@ Status: **Proposed** (awaiting user verification) · **Accepted** · **Supersede
     README.
   - INSTRUCTION.md checklists ticked.
 - **Consequences:** The repository is self-explanatory for the grader and reproducible from scratch.
+
+## D32 — Publication and final pre-submission checks
+- **Status:** Accepted
+- **Context:** S15. Submission = one public GitHub repository URL; the evaluator clones it,
+  installs, configures their own credentials and runs the command on unseen repositories.
+- **Decision / checks performed:**
+  - Repository: https://github.com/Myt1x54/devops-repo-auditor (branch `main`), confirmed
+    **public** by an anonymous clone with credential helpers disabled.
+  - **History scan** of all commits: no `.env`, key, certificate or PDF file ever committed; the
+    real API key value appears nowhere; zero literal matches for Google/Anthropic/GitHub/AWS/Stripe
+    key formats or private-key blocks (test secrets are assembled at runtime).
+  - Required items present in the published tree: `agent.py`, `tools.py`, agent modules
+    (`auditor/`), `requirements.txt`, `.env.example`, `README.md`, `tests/`, `sample_report.json`.
+  - CI (GitHub Actions) green on the pushed commits; fresh install from published files passed
+    (S14).
+  - The submitted URL is the repository root; graders need only a free Gemini key (or an Anthropic
+    key with `AUDITOR_PROVIDER=anthropic`).
+- **Consequences:** Ready to submit. Further changes should keep CI green and follow the per-step
+  commit rule in CLAUDE.md.

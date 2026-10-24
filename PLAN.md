@@ -22,7 +22,7 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 | S12 | Automated tests | ✅ |
 | S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ✅ |
 | S14 | README, sample_report.json, final polish | ✅ |
-| S15 | Publish to public GitHub | 🔄 |
+| S15 | Publish to public GitHub | ✅ |
 
 ---
 
@@ -170,3 +170,5 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 ## S15 — Publish
 - Create public GitHub repo, push (only after user approval), double-check no `.env`/secrets
   committed. User submits the URL.
+- Done: public repo https://github.com/Myt1x54/devops-repo-auditor, history scanned clean, required
+  files present, CI green. Decisions: D32.
