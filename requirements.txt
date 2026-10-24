@@ -1,0 +1,9 @@
+# Runtime
+google-genai==2.33.0   # default LLM provider (Gemini, free tier)
+anthropic==2.3.0       # optional LLM provider (paid)
+python-dotenv==1.2.4
+PyYAML==6.0.3
+
+# Development / testing (ruff is also used by the optional run_ruff tool)
+pytest==9.1.1
+ruff==0.17.2
