@@ -21,8 +21,8 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 | S11 | Tracing, logging & error handling hardening | ✅ |
 | S12 | Automated tests | ✅ |
 | S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ✅ |
-| S14 | README, sample_report.json, final polish | ⬜ |
-| S15 | Publish to public GitHub | ⬜ |
+| S14 | README, sample_report.json, final polish | ✅ |
+| S15 | Publish to public GitHub | 🔄 |
 
 ---
 
@@ -164,6 +164,8 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 - `sample_report.json`: authentic output from a real run (and optional `sample_trace.jsonl`).
 - Final check against the submission checklist in INSTRUCTION.md §8.
 - **Verify:** fresh clone → install → run works by following README exactly.
+- Done: README.md, sample_report.json + trace (real run), transport-error retry fix, checklist
+  ticked. Decisions: D31.
 
 ## S15 — Publish
 - Create public GitHub repo, push (only after user approval), double-check no `.env`/secrets

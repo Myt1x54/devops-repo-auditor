@@ -1,0 +1,55 @@
+{
+  "repository": "https://github.com/step-security/github-actions-goat",
+  "violations": [
+    {
+      "rule_id": "TST-001",
+      "category": "testing",
+      "severity": "high",
+      "file": null,
+      "line": null,
+      "description": "No automated test files or test suites exist in the repository.",
+      "evidence": "No test directory or test files (*_test.py, test_*.py, *.test.*, *.spec.*) are present, and package.json specifies 'echo \"Error: no test specified\" && exit 1'.",
+      "recommendation": "Implement an automated test suite for the application components and integrate test execution into CI."
+    },
+    {
+      "rule_id": "DEP-003",
+      "category": "dependency_management",
+      "severity": "medium",
+      "file": "src/backdoor-demo/package.json",
+      "line": null,
+      "description": "Node.js package manifests exist without any corresponding lockfile.",
+      "evidence": "src/backdoor-demo/package.json and src/exfiltration-demo/package.json exist, but package-lock.json (and other lockfiles) are missing.",
+      "recommendation": "Generate and commit a lockfile (e.g. package-lock.json) to ensure reproducible dependency resolutions."
+    },
+    {
+      "rule_id": "CQ-001",
+      "category": "code_quality",
+      "severity": "medium",
+      "file": null,
+      "line": null,
+      "description": "No code linter, formatter, or pre-commit configuration is present in the repository.",
+      "evidence": "Config files for linters/formatters (eslint, prettier, ruff, flake8, pre-commit) are all missing.",
+      "recommendation": "Configure a linter and formatter (e.g., ESLint/Prettier for JavaScript) and add it to CI or pre-commit hooks."
+    },
+    {
+      "rule_id": "CI-004",
+      "category": "ci_cd",
+      "severity": "medium",
+      "file": ".github/workflows/baseline_checks.yml",
+      "line": 10,
+      "description": "A GitHub Actions workflow pins a third-party action to a mutable branch reference instead of an immutable version tag or SHA.",
+      "evidence": ".github/workflows/baseline_checks.yml line 10: - uses: step-security/harden-runner@int-sh",
+      "recommendation": "Pin third-party GitHub Actions to an immutable version tag (e.g. @v2) or full commit SHA."
+    },
+    {
+      "rule_id": "HYG-003",
+      "category": "repository_hygiene",
+      "severity": "low",
+      "file": ".gitignore",
+      "line": 2,
+      "description": ".gitignore is inadequate and misses standard entries like node_modules/, dist/, build/, and .env.",
+      "evidence": ".gitignore contains only: .DS_Store",
+      "recommendation": "Add standard language-specific ignore patterns (node_modules/, dist/, build/, .env, etc.) to .gitignore."
+    }
+  ]
+}

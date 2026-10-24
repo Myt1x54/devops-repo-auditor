@@ -13,11 +13,11 @@ Scope: software engineering and DevOps only. **Excluded**: ML training, datasets
 experiment tracking, other MLOps-specific checks.
 
 ## 2. Functional requirements
-- [ ] Accept a public GitHub repository URL and inspect it automatically.
-- [ ] Use an LLM to select inspection tools based on observations, including follow-up tool calls.
-- [ ] Identify genuine violations, distinguish acceptable alternatives, give evidence + remediation.
-- [ ] Produce the machine-readable JSON report without interactive prompts.
-- [ ] Leave the inspected repository unchanged.
+- [x] Accept a public GitHub repository URL and inspect it automatically.
+- [x] Use an LLM to select inspection tools based on observations, including follow-up tool calls.
+- [x] Identify genuine violations, distinguish acceptable alternatives, give evidence + remediation.
+- [x] Produce the machine-readable JSON report without interactive prompts.
+- [x] Leave the inspected repository unchanged.
 
 > A fixed checklist / static scanner followed by an LLM summary is **insufficient**.
 
@@ -100,14 +100,16 @@ Unseen repos with injected defects: (A) obvious issues, (B) subtler CI/security/
 LLM provider/model choice does not affect the grade.
 
 ## 8. Submission checklist
-- [ ] `agent.py` — CLI entry point with required arguments
-- [ ] `tools.py` — inspection tool implementations
-- [ ] Agent modules — LLM interaction, tool selection, execution loop
-- [ ] `requirements.txt` or `pyproject.toml`
-- [ ] `.env.example` — variable names only, no real credentials
-- [ ] `README.md` — exact install, setup, architecture, run instructions
-- [ ] `tests/` — automated tests for tools and agent behaviour
-- [ ] `sample_report.json` — authentic agent output
+_Status after S14: all items present (see README.md for how each is met)._
+
+- [x] `agent.py` — CLI entry point with required arguments
+- [x] `tools.py` — inspection tool implementations
+- [x] Agent modules — LLM interaction, tool selection, execution loop
+- [x] `requirements.txt` or `pyproject.toml`
+- [x] `.env.example` — variable names only, no real credentials
+- [x] `README.md` — exact install, setup, architecture, run instructions
+- [x] `tests/` — automated tests for tools and agent behaviour
+- [x] `sample_report.json` — authentic agent output
 
 Evaluator must be able to: clone → install → set API key → run the command on unseen repos.
 No ZIPs, screenshots or hand-written reports.

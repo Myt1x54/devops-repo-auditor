@@ -171,6 +171,31 @@ def parse_response(response: Any, *, usage: Usage, model: str) -> LLMResponse:
     )
 
 
+def _transport_error_types() -> tuple[type[BaseException], ...]:
+    """Base classes for network-level failures of the HTTP libraries the SDK may use
+    (connection reset, read/write errors, protocol errors, timeouts)."""
+    found: list[type[BaseException]] = []
+    for module_name in ("httpx", "httpx2"):
+        try:
+            module = __import__(module_name)
+        except ImportError:
+            continue
+        cls = getattr(module, "TransportError", None)
+        if isinstance(cls, type):
+            found.append(cls)
+    return tuple(found)
+
+
+_TRANSPORT_ERRORS = _transport_error_types()
+
+
+def is_transport_error(exc: BaseException) -> bool:
+    if _TRANSPORT_ERRORS and isinstance(exc, _TRANSPORT_ERRORS):
+        return True
+    name = type(exc).__name__.lower()  # fallback for wrapped/unknown transport errors
+    return any(word in name for word in ("timeout", "connect", "readerror", "protocolerror"))
+
+
 def _error_details(exc: errors.APIError) -> list[dict[str, Any]]:
     body = getattr(exc, "details", None) or getattr(exc, "response_json", None) or {}
     if isinstance(body, dict):
@@ -324,11 +349,8 @@ class GeminiLLM:
                     raise LLMError(f"Could not reach the Gemini API: {exc}") from None
                 wait = min(MAX_BACKOFF, 2 * 2 ** (attempt - 1))
                 log.warning("Network error talking to Gemini (%s); retrying", type(exc).__name__)
-            except Exception as exc:  # httpx transport errors etc.
-                if (
-                    "timeout" in type(exc).__name__.lower()
-                    or "connect" in type(exc).__name__.lower()
-                ):
+            except Exception as exc:  # httpx/httpx2 transport errors etc.
+                if is_transport_error(exc):
                     if attempt == MAX_ATTEMPTS:
                         raise LLMError(f"Could not reach the Gemini API: {exc}") from None
                     wait = min(MAX_BACKOFF, 2 * 2 ** (attempt - 1))

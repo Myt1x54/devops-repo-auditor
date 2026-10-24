@@ -23,6 +23,7 @@ env/
 # Agent outputs (sample_report.json is committed on purpose)
 report*.json
 *.trace.jsonl
+!sample_report.trace.jsonl
 traces/
 runs/
 

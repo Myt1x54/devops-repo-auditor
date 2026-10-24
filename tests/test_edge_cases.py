@@ -294,3 +294,12 @@ def test_report_json_is_utf8_and_pretty(tmp_path, local_repo_url, monkeypatch):
         "repository": "https://github.com/a/b",
         "violations": [],
     }
+
+
+@pytest.mark.parametrize("module_name", ["httpx", "httpx2"])
+def test_gemini_retries_connection_reset_read_errors(module_name):
+    httpx_like = pytest.importorskip(module_name)
+    # e.g. "[WinError 10054] An existing connection was forcibly closed by the remote host"
+    reset = httpx_like.ReadError("connection reset by peer")
+    llm, sleeps = _gemini([reset, _ok()])
+    assert llm.complete("s", [], TOOLS).text == "x" and len(sleeps) == 1
