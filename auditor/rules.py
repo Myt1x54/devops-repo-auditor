@@ -76,7 +76,8 @@ _RULES = [
     Rule("TST-002", "testing", "Tests not run in CI", "medium",
          "Tests exist and CI exists, but no CI job runs them."),
     Rule("TST-003", "testing", "Test failures ignored", "high",
-         "Test step that cannot fail: '|| true', continue-on-error, exit 0, --exit-zero."),
+         "A step that runs the TESTS cannot fail: '|| true', continue-on-error, exit 0. Record "
+         "this separately from ignored lint/type-check steps (CI-003)."),
     Rule("TST-004", "testing", "Tests skipped or disabled wholesale", "medium",
          "Test job disabled (if: false), whole suites skipped, or test command commented out."),
     Rule("TST-005", "testing", "Test or coverage configuration ineffective", "medium",
@@ -89,8 +90,9 @@ _RULES = [
          "CI never runs on pull requests or on the default branch (wrong branch names, only "
          "workflow_dispatch, paths filters that exclude the code)."),
     Rule("CI-003", "ci_cd", "Ineffective CI gate", "high",
-         "A validation step or job that can never fail: continue-on-error: true, '|| true', "
-         "set +e, --exit-zero on lint/type-check steps."),
+         "A non-test validation step or job (lint, format, type-check, security scan) that can "
+         "never fail: continue-on-error: true, '|| true', set +e, --exit-zero. Ignored test "
+         "steps are TST-003 - record both when both occur."),
     Rule("CI-004", "ci_cd", "Third-party action pinned to a mutable branch", "medium",
          "uses: owner/action@main, @master or no ref. Version tags (@v4) are acceptable."),
     Rule("CI-005", "ci_cd", "Invalid workflow file", "high",
@@ -160,6 +162,13 @@ _RULES = [
 ]  # fmt: skip
 
 RULES: dict[str, Rule] = {r.id: r for r in _RULES}
+
+# Rules whose evidence is that a file *exists / is tracked* (seeing its name in a listing or in
+# history is enough). Every other rule makes a claim about content, so verification requires
+# that the file's content was actually shown by a tool (D30).
+EXISTENCE_RULES = frozenset(
+    {"HYG-004", "HYG-005", "HYG-006", "HYG-007", "SEC-002", "SEC-003", "SEC-004", "CFG-002"}
+)
 
 
 def is_known_or_custom(rule_id: str) -> bool:

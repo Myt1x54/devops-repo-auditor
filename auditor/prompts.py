@@ -33,7 +33,8 @@ evidence disproves, and make sure none duplicates another.
 1. Structure: from the file list, identify languages, package manager, CI system, Docker, docs. \
 Look for tracked artefacts (__pycache__/, *.pyc, .pytest_cache/, dist/, build/, *.egg-info, \
 node_modules/, venv/.venv/, .DS_Store, *.log, coverage files, .idea/, local settings).
-2. Hygiene: read README.md and .gitignore (does it ignore the artefacts and .env above?).
+2. Hygiene: read README.md and .gitignore (does it ignore the artefacts and .env above?). A \
+missing README is HYG-001 and a missing .gitignore is HYG-003 - record them.
 3. Dependencies: read the manifests (requirements*.txt, pyproject.toml, setup.cfg, Pipfile, \
 package.json, ...). Check version constraints, lockfiles for the toolchain in use (file_exists), \
 and that the same package is not declared inconsistently.
@@ -76,14 +77,19 @@ files, and do not report the absence of things the repository cannot contain.
 - Test fixtures, examples and documentation that obviously use dummy credentials are not leaks; \
 judge by path and context.
 - A healthy repository may have few or no violations; do not pad the report with style opinions.
+- Do not report consequences of a finding you already recorded: with no CI at all (CI-001), do \
+not also report "tests not run in CI" or "no build validation"; with no tests (TST-001), do not \
+also report broken test configuration.
 - Placeholders such as `${{ secrets.X }}`, os.getenv(...), `your_api_key_here` are not leaked \
 secrets. Never write secret values in any field.
 
 ## Recording findings
 - rule_id: use the catalogue below. For an issue it does not cover, use the category prefix with \
 a number from 901 (e.g. CI-901).
-- One finding per distinct problem. If the same problem appears in several places in one file, \
-record it once and list the other lines in the evidence. For something missing, omit file/line.
+- One finding per distinct problem. If the same rule is violated in several places in one file, \
+record it once and list the other lines in the evidence; different rules are separate findings \
+even in the same file (e.g. ignored tests TST-003 and ignored lint CI-003). For something \
+missing, omit file/line; for a committed or deleted file, always give its path.
 - severity: start from the catalogue default and adjust to the context. critical = exploitable \
 now (live secret, privileged execution of untrusted code); high = serious risk or a gate that \
 cannot fail; medium = best-practice gap with real impact; low = hygiene/documentation.
@@ -98,18 +104,27 @@ setting) without secret values. recommendation: a concrete fix someone can apply
 )
 
 
-def initial_message(repo_url: str, tree: str) -> str:
-    """First user turn: the task plus the repository tree (the agent's first observation)."""
+def initial_message(repo_url: str, tree: str, history: str = "") -> str:
+    """First user turn: the task plus the harness's first observation (files, recent commits)."""
     categories = ", ".join(CATEGORIES)
-    return (
+    parts = [
         f"Audit this repository: {repo_url}\n"
         f"Categories to cover: {categories}.\n\n"
         "Initial observation - tracked files (from list_files; large directories are "
         "summarised, expand them with list_files(path=...)):\n"
-        f"{tree}\n\n"
-        "Start by stating what kind of project this is and which areas look most likely to "
+        f"{tree}\n"
+    ]
+    if history:
+        parts.append(
+            "\nRecent commits (from git_log; A/M/D = added/modified/deleted files - deleted "
+            "files may still be retrievable from history):\n"
+            f"{history}\n"
+        )
+    parts.append(
+        "\nStart by stating what kind of project this is and which areas look most likely to "
         "have problems, then start calling tools."
     )
+    return "".join(parts)
 
 
 CONTINUE_NUDGE = (

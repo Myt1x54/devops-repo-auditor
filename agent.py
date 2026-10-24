@@ -18,7 +18,6 @@ from auditor.errors import EXIT_FATAL, EXIT_OK, AuditError, InvalidInputError
 from auditor.findings import AuditState
 from auditor.llm import create_llm
 from auditor.loop import DEFAULT_MAX_STEPS, AuditAgent
-from auditor.redact import sanitize
 from auditor.report import build_report, write_report
 from auditor.toolset import build_registry
 from auditor.trace import TraceWriter
@@ -122,9 +121,8 @@ def _audit(repo: Any, output: Path, max_steps: int, llm: Any, trace: TraceWriter
         state = AuditState()
         registry = build_registry(repo_tools, state)
         try:
-            tree = sanitize(repo_tools.list_files())  # Observe: first observation (full listing)
             agent = AuditAgent(llm, registry, state, max_steps=max_steps, trace=trace)
-            result = agent.run(repo.url, tree)
+            result = agent.run(repo.url)  # the loop makes the first observation itself
             unchanged = repo_tools.git_status().startswith("Working tree clean")
             if not unchanged:
                 log.warning("Inspected clone was modified during the audit")

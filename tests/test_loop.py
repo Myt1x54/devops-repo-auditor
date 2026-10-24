@@ -231,3 +231,14 @@ def test_history_is_append_only(env):
 def test_invalid_max_steps():
     with pytest.raises(AuditError):
         AuditAgent(FakeLLM([]), None, AuditState(), max_steps=0)
+
+
+def test_harness_seeds_first_observation_through_registry(env):
+    registry, state = env
+    agent, llm, events = make_agent(env, [fake_response(FINISH)])
+    agent.run("https://github.com/x/y")  # no tree given: the loop observes itself
+    first = llm.calls[0]["history"][0].text
+    assert "requirements.txt" in first and "Recent commits" in first and "add requirements" in first
+    seeded = [d["name"] for e, d in events if e == "tool" and d["step"] == 0]
+    assert seeded == ["list_files", "git_log"]
+    assert "requirements.txt" in state.seen_files  # listed files count as observed

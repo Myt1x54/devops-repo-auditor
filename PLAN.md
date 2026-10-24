@@ -20,7 +20,7 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 | S10 | System prompt & DevOps knowledge | ✅ |
 | S11 | Tracing, logging & error handling hardening | ✅ |
 | S12 | Automated tests | ✅ |
-| S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ⬜ |
+| S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ✅ |
 | S14 | README, sample_report.json, final polish | ⬜ |
 | S15 | Publish to public GitHub | ⬜ |
 
@@ -155,6 +155,8 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 - Iterate on prompts/verification to raise precision without killing recall. Record changes as
   decisions. **No repo-specific findings hardcoded.**
 - **Verify:** review the precision/recall table together.
+- Done: `evaluation/` (fixtures + scoring), `scripts/evaluate.py`; 5 live rounds, P/R 1.00/0.86 →
+  1.00/1.00. Decisions: D30.
 
 ## S14 — README, sample report, polish
 - `README.md`: overview, architecture diagram, install, `.env` setup, run command, options, tools,

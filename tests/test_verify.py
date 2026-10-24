@@ -47,9 +47,17 @@ def test_unobserved_file_dropped():
     assert kept == [] and notes[0].action == "dropped"
 
 
-def test_line_removed_when_content_never_shown():
+def test_existence_finding_on_listed_file_kept_without_line():
+    f = finding("F1", rule="HYG-004", file="big.bin", line=1, category="repository_hygiene")
+    kept, notes = verify_findings(state_with(f, seen={"big.bin"}), read_text)
+    assert kept[0].file == "big.bin" and kept[0].line is None
+    assert notes[0].action == "line_removed"
+
+
+def test_content_claim_on_file_only_listed_is_dropped():
     kept, notes = verify_findings(state_with(finding("F1"), seen={"pyproject.toml"}), read_text)
-    assert kept[0].line is None and notes[0].action == "line_removed"
+    assert kept == [] and notes[0].action == "dropped"
+    assert "content was never shown" in notes[0].reason
 
 
 def test_wrong_line_corrected_using_longest_snippet():
@@ -119,3 +127,12 @@ def test_text_cleaned_redacted_and_capped():
     ev = kept[0].evidence
     assert "q8Zr2" not in ev and "[REDACTED:" in ev
     assert "\n" not in ev and "  " not in ev and len(ev) <= 600 and ev.endswith("...")
+
+
+def test_two_rules_at_same_location_merged_keeping_more_severe():
+    a = finding("F1", rule="CFG-005", line=5, severity="medium")
+    b = finding("F2", rule="TST-005", line=5, severity="high", category="testing")
+    c = finding("F3", rule="SEC-009", line=None, severity="low", category="security")
+    kept, notes = verify_findings(state_with(a, b, c, read={"pyproject.toml"}), read_text)
+    assert [f.id for f in kept] == ["F2", "F3"]
+    assert notes[-1].action == "merged" and notes[-1].finding_id == "F1"

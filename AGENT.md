@@ -99,3 +99,10 @@ Control tools (agent bookkeeping, not inspection):
 Exactly the contract in [INSTRUCTION.md §5](INSTRUCTION.md). `rule_id`, `category` (snake-case of the
 9 categories), `severity`, `file` (repo-relative or `null`), `line` (int or `null`), `description`,
 `evidence`, `recommendation`. A tool-call trace is optionally written next to the report.
+
+## 7. Evaluation
+`scripts/evaluate.py` builds three fixture repositories (`evaluation/fixtures.py`: A obvious,
+B subtle CI/security/config, C healthy), audits them through the same pipeline and scores the
+reports against answer keys (`evaluation/scoring.py`): precision = TP / reported, recall =
+TP / known, duplicates and unsupported claims count as false positives, debatable findings are
+neutral. The agent never imports `evaluation/`. Results per round are in DECISION.md (D30).

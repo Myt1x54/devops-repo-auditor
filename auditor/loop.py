@@ -29,6 +29,7 @@ from auditor.llm import (
     AssistantTurn,
     LLMClient,
     LLMResponse,
+    ToolCall,
     ToolResult,
     ToolResultsTurn,
     Turn,
@@ -52,6 +53,7 @@ DEFAULT_TIME_BUDGET = 30 * 60.0  # seconds; free-tier models can be slow
 BUDGET_WARNING_STEPS = 3  # warn the model when this many steps are left
 MAX_IDLE_NUDGES = 2  # replies without tool calls before we give up
 MAX_REFUSALS = 2
+SEED_LOG_COMMITS = 15  # recent commits shown in the first observation
 
 TraceFn = Callable[..., None]
 
@@ -91,18 +93,26 @@ class AuditAgent:
         self.history: list[Turn] = []
 
     # -- public ----------------------------------------------------------------------------
-    def run(self, repo_url: str, tree: str) -> LoopResult:
+    def run(self, repo_url: str, tree: str | None = None) -> LoopResult:
+        """Run the audit. Without ``tree`` the harness makes the first observation itself:
+        ``list_files`` and a short ``git_log``, executed through the registry so the files they
+        show count as observed and the calls appear in the trace as step 0 (D30)."""
         started = self.clock()
         tools = self.registry.specs()
-        self.history = [UserTurn(initial_message(repo_url, tree))]
         self.trace(
             "loop_start",
             tools=[t.name for t in tools],
             system_prompt_chars=len(self.system_prompt),
-            first_observation_chars=len(tree),
             max_steps=self.max_steps,
             time_budget=self.time_budget,
         )
+        history_text = ""
+        if tree is None:
+            tree = self._execute(0, ToolCall("observe-files", "list_files", {})).content
+            history_text = self._execute(
+                0, ToolCall("observe-history", "git_log", {"max_count": SEED_LOG_COMMITS})
+            ).content
+        self.history = [UserTurn(initial_message(repo_url, tree, history_text))]
 
         steps = 0
         idle = refusals = 0

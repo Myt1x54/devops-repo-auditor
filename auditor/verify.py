@@ -18,8 +18,9 @@ import re
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
-from auditor.findings import AuditState, Finding
+from auditor.findings import SEVERITIES, AuditState, Finding
 from auditor.redact import redact
+from auditor.rules import EXISTENCE_RULES
 
 MAX_TEXT = {"description": 300, "evidence": 600, "recommendation": 400}
 _SNIPPET_RES = (
@@ -82,6 +83,20 @@ def verify_findings(
                 VerificationNote(f.id, f.rule_id, "dropped", f"'{f.file}' was never observed")
             )
             continue
+        if (
+            f.file is not None
+            and f.file not in state.read_files
+            and f.rule_id not in EXISTENCE_RULES
+        ):
+            notes.append(
+                VerificationNote(
+                    f.id,
+                    f.rule_id,
+                    "dropped",
+                    f"claim about the content of '{f.file}', but its content was never shown",
+                )
+            )
+            continue
         if f.file is not None and f.line is not None:
             if f.file not in state.read_files:
                 notes.append(
@@ -137,6 +152,34 @@ def _merge(findings: list[Finding], notes: list[VerificationNote]) -> list[Findi
                 f"{keep.evidence.rstrip('.')}. Also at line(s) {', '.join(map(str, extra_lines))}."
             )
         out.append(keep)
+    return _merge_same_location(out, notes)
+
+
+def _merge_same_location(findings: list[Finding], notes: list[VerificationNote]) -> list[Finding]:
+    """Two rules cited for the exact same file and line describe one problem: keep the more
+    severe one (first recorded on ties). Findings without a line are never merged here."""
+    order = {s: i for i, s in enumerate(SEVERITIES)}
+    by_location: dict[tuple[str, int], Finding] = {}
+    out: list[Finding] = []
+    for f in findings:
+        if f.file is None or f.line is None:
+            out.append(f)
+            continue
+        key = (f.file, f.line)
+        other = by_location.get(key)
+        if other is None:
+            by_location[key] = f
+            out.append(f)
+            continue
+        keep, drop = (other, f) if order[other.severity] <= order[f.severity] else (f, other)
+        if keep is f:
+            out[out.index(other)] = f
+            by_location[key] = f
+        notes.append(
+            VerificationNote(
+                drop.id, drop.rule_id, "merged", f"same location as {keep.id} ({keep.rule_id})"
+            )
+        )
     return out
 
 

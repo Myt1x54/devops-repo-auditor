@@ -13,7 +13,7 @@ from collections.abc import Callable
 
 from auditor.findings import CATEGORIES, RULE_ID_RE, SEVERITIES, AuditState, Finding
 from auditor.registry import ToolRegistry
-from auditor.rules import RULES, is_known_or_custom
+from auditor.rules import EXISTENCE_RULES, RULES, is_known_or_custom
 from tools import RepoTools, ToolError, normalize_repo_path
 
 _HIT_RE = re.compile(r"^([^\s:][^:\n]*?):(\d+):", re.MULTILINE)  # search_code / run_ruff lines
@@ -214,6 +214,12 @@ def build_registry(repo_tools: RepoTools, state: AuditState) -> ToolRegistry:
                 )
         if rel is None and line is not None:
             return "ERROR: line given without file"
+        if rel is None and rule_id in EXISTENCE_RULES:
+            return (
+                f"ERROR: {rule_id} is about a specific committed file; set file to its path "
+                "(e.g. the deleted .env shown by git_file_history). For several files, record "
+                "the most important one and list the others in the evidence."
+            )
         if rel is not None and line is not None and rel in tracked:
             text = repo_tools._read_text(rel)
             total = len(text.splitlines()) if text is not None else None

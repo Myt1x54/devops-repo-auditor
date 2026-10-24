@@ -205,3 +205,13 @@ def test_record_finding_requires_catalogue_or_custom_id(setup):
     assert bad.is_error and "not in the rule catalogue" in bad.content and "SEC-001" in bad.content
     custom = run(registry, "record_finding", **{**FINDING, "rule_id": "SEC-901"})
     assert custom.content.startswith("Recorded F1: SEC-901")
+
+
+def test_existence_rules_require_a_file(setup):
+    registry, state = setup
+    args = {**FINDING, "rule_id": "SEC-004"}
+    args.pop("file")
+    args.pop("line")
+    result = run(registry, "record_finding", **args)
+    assert result.is_error and "set file to its path" in result.content
+    assert state.findings == []

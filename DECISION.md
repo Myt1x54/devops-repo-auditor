@@ -497,3 +497,50 @@ Status: **Proposed** (awaiting user verification) · **Accepted** · **Supersede
   - `pytest-cov` pinned in requirements.txt (dev section).
 - **Consequences:** ~300 tests run in ~40 s with no key and no network; regressions caught on every
   push.
+
+## D30 — Evaluation harness and the generic fixes it motivated
+- **Status:** Accepted
+- **Context:** S13. The hidden evaluation uses (A) obvious, (B) subtle CI/security/config and
+  (C) mostly healthy repositories, scored by precision and recall.
+- **Decision:**
+  - **Fixtures as code** (`evaluation/fixtures.py`): three repositories built at runtime with git
+    (incl. a `.env` committed then deleted, binary artefacts), so our repo never contains committed
+    secrets/artefacts; fake credentials are assembled from pieces. Each has an answer key
+    (`Expected`: acceptable rule ids + file globs, optional lines) and an *optional* list of
+    debatable findings that are neither rewarded nor penalised. Kept in `evaluation/`, which the
+    agent never imports (no repository-specific answers in the agent).
+  - **Scoring** (`evaluation/scoring.py`): TP = first prediction matching an unmatched expected item
+    (same-line match preferred); duplicates and unmatched predictions = FP; precision TP/(TP+FP),
+    recall TP/expected. `scripts/evaluate.py` runs the real pipeline on each fixture and writes
+    reports, traces and `summary.json` to `runs/eval/`.
+  - **Generic fixes found by the evaluation (none mention a fixture):**
+    1. The first observation (`list_files` + 15-commit `git_log`) now runs **through the registry at
+       step 0**: files in the seeded listing count as observed (round 1 wrongly dropped correct
+       `__pycache__`/`.DS_Store` findings) and recent A/M/D history is visible (round 1 never looked
+       at history and missed a deleted `.env`).
+    2. **Existence vs content rules** (`EXISTENCE_RULES`): a file seen only in a listing supports
+       "file is committed" rules (artefacts, OS files, venv, keys, `.env`, local settings); any other
+       rule requires the file's content to have been shown, else the finding is dropped (stops
+       claims about unread files).
+    3. **Same-location merge:** two rules cited at the identical file and line are one problem; the
+       more severe finding is kept (round 2 reported the coverage defect twice).
+    4. **Existence rules need a file path:** `record_finding` rejects e.g. SEC-004 without `file`
+       (round 3 recorded the deleted `.env` without its path).
+    5. **Rule boundaries and derived duplicates in the prompt/catalogue:** ignored *test* steps
+       (TST-003) and ignored *lint/type-check* steps (CI-003) are separate findings (round 3 merged
+       them into one); "record once" applies to the same rule only; do not report consequences of
+       a recorded finding (no CI ⇒ no "no build validation"); missing README/.gitignore spelled out.
+- **Results (gemini-3.5-flash-lite, free tier, 21 known defects over A+B, C healthy):**
+
+  | Round | Change before the round | Precision | Recall |
+  |---|---|---|---|
+  | 1 | baseline | 1.00 | 0.86 |
+  | 2 | fixes 1-2 | 0.91 | 0.91 (0.95 / 0.91 after fixing a scorer and an answer-key issue) |
+  | 3 | fix 3 | 0.95 | 0.91 |
+  | 4 | fixes 4-5 (rule boundaries) | 0.95 | 0.95 |
+  | 5 | fix 5 (derived duplicates, README) | **1.00** | **1.00** |
+
+  Caveats: single runs with run-to-run model variance; the fixtures were also the tuning set, so
+  hidden-repo scores will likely be lower — every fix is generic (no fixture-specific logic).
+- **Consequences:** Measured, repeatable quality checks; remaining misses are model variance
+  (e.g. a missing README reported in one run but not the next).
