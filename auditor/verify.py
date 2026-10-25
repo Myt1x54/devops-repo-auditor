@@ -111,8 +111,31 @@ def verify_findings(
                     _check_line(f, text.splitlines(), notes)
         checked.append(f)
 
-    merged = _merge(checked, notes)
+    merged = _drop_derived(_merge(checked, notes), notes)
     return [_clean(f) for f in merged], notes
+
+
+# Repository-wide findings that only restate "there is no CI at all" (CI-001).
+_IMPLIED_BY_NO_CI = {"TST-002", "BLD-001", "CI-002", "CI-006", "CQ-002"}
+
+
+def _drop_derived(findings: list[Finding], notes: list[VerificationNote]) -> list[Finding]:
+    """Remove findings that are mere consequences of another recorded finding (D33).
+
+    With no CI at all (CI-001), file-less findings such as "tests not run in CI" or "no build
+    validation" add nothing and would count as duplicates. File-specific findings are kept.
+    """
+    if not any(f.rule_id == "CI-001" for f in findings):
+        return findings
+    out = []
+    for f in findings:
+        if f.file is None and f.rule_id in _IMPLIED_BY_NO_CI:
+            notes.append(
+                VerificationNote(f.id, f.rule_id, "dropped", "implied by CI-001 (no CI at all)")
+            )
+            continue
+        out.append(f)
+    return out
 
 
 def _check_line(f: Finding, lines: list[str], notes: list[VerificationNote]) -> None:

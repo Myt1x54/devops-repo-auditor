@@ -586,3 +586,34 @@ Status: **Proposed** (awaiting user verification) · **Accepted** · **Supersede
     key with `AUDITOR_PROVIDER=anthropic`).
 - **Consequences:** Ready to submit. Further changes should keep CI green and follow the per-step
   commit rule in CLAUDE.md.
+
+## D33 — Post-review hardening: key/secret recall, model fallback, lenient URLs
+- **Status:** Accepted (amends D2, D25, D26)
+- **Context:** S16. A pre-submission review audited repositories never used for tuning:
+  `psf/requests` (healthy) gave 0 false positives, but `OWASP/NodeGoat` missed a committed RSA
+  private key that the server loads (`artifacts/cert/server.key`) and a hardcoded API key in
+  dev config — the "dummy test fixture" exception was too loose.
+- **Decision:**
+  1. **Secrets/keys the application loads are findings even if "dev"/"local"** (SEC-001/SEC-002
+     rule text and prompt); only obviously fake keys in test-fixture folders used only by tests
+     are excluded; tracked `*.pem/*.key/id_rsa/*.p12/*.jks` with a private key → SEC-002.
+  2. **Gemini model fallback chain** `gemini-3.5-flash-lite → gemini-3.1-flash-lite →
+     gemini-3.6-flash`, now also used when a model is **not found (404)** (renamed/retired), not
+     only on daily quota / overload. Fatal only when no model is left.
+  3. **Lenient repository URLs:** `http://`, no scheme, `www.`, any case, SSH
+     `git@github.com:owner/repo.git` and `ssh://git@github.com/...` are accepted and normalised;
+     cloning is always anonymous HTTPS. Look-alike hosts (`github.com.evil.com`) and other hosts
+     are still rejected before any network call.
+  4. **Derived duplicates removed in verification:** when CI-001 (no CI at all) is recorded,
+     file-less TST-002 / BLD-001 / CI-002 / CI-006 / CQ-002 findings are dropped as restatements
+     (prompt guidance alone did not stop "no build validation" reappearing).
+- **Results after the change (free gemini-3.5-flash-lite):**
+  - Fixtures, two rounds: P/R 1.00/1.00 and 0.95/1.00 (the one FP is removed by fix 4 on replay).
+  - `psf/requests`: 0 findings (test certificates under `tests/` correctly not flagged).
+  - `OWASP/NodeGoat`, two runs: the committed private key (SEC-002) found in **both**; the rest
+    varies by run (cookie secret, `latest`/tarball dependencies, Docker build validation).
+- **Consequences / honest limitation:** on unfamiliar real repositories the small free model
+  reports a varying subset of true issues (it tends to stop after 2-3 findings); precision stays
+  high. A stronger model (`AUDITOR_PROVIDER=anthropic` or another `AUDITOR_MODEL`) is the main
+  lever for recall. OpenAI support was considered and not added: the README gives graders a free
+  Gemini key in two minutes, and the provider does not affect the grade.

@@ -40,8 +40,9 @@ log = logging.getLogger(__name__)
 # call) and gemini-3.6-flash allows only 20 requests/day - less than one audit. The Flash-Lite
 # models are fast (~1 s) and each has its own daily quota.
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
-# Next model to use when the current one is overloaded (503) or its daily quota is used up.
-FALLBACK_MODELS = ("gemini-3.1-flash-lite",)
+# Models to try in order when the current one is overloaded (503), out of daily quota, or not
+# found (404, renamed/retired). gemini-3.6-flash is last: its free quota is only 20 requests/day.
+FALLBACK_MODELS = ("gemini-3.1-flash-lite", "gemini-3.6-flash")
 SWITCH_AFTER_503 = 3  # consecutive 503s before switching to the next fallback model
 DEFAULT_EFFORT = "medium"
 DEFAULT_MAX_OUTPUT_TOKENS = 16000  # includes thinking tokens
@@ -324,8 +325,13 @@ class GeminiLLM:
                         "Gemini API key was rejected. Check GEMINI_API_KEY in .env."
                     ) from None
                 elif code == 404:
+                    if self.fallback_models:  # model renamed or retired: try the next one
+                        self._switch_model("not found (404)")
+                        retries += 1
+                        continue
                     raise LLMError(
-                        f"Gemini model {self.model!r} was not found (404). Check AUDITOR_MODEL."
+                        f"Gemini model {self.model!r} was not found (404) and no fallback model "
+                        "is available. Set AUDITOR_MODEL to a current model id."
                     ) from None
                 else:
                     raise LLMError(f"Gemini API rejected the request ({code}): {message}") from None

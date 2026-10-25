@@ -103,10 +103,12 @@ _RULES = [
     # -- security ------------------------------------------------------------------------------
     Rule("SEC-001", "security", "Hardcoded credential", "critical",
          "Literal API key, token, password or connection-string password in source or config "
-         "(shown as [REDACTED:...] in tool output). Not placeholders or env lookups."),
+         "(shown as [REDACTED:...] in tool output), including development/test config the "
+         "application loads (dev keys still leak). Not placeholders or env lookups."),
     Rule("SEC-002", "security", "Private key committed", "critical",
-         "PEM/SSH private key or keystore tracked in the repository (not test fixtures that are "
-         "clearly dummy, e.g. under tests/ with 'test' names - use judgement)."),
+         "PEM/SSH private key or keystore tracked in the repository - including self-signed or "
+         "'dev' TLS keys the application loads. Exclude only obviously fake keys inside test "
+         "fixture folders (tests/, fixtures/) that only tests use."),
     Rule("SEC-003", "security", "Environment or secrets file committed", "high",
          "Tracked .env, *.env, credentials.json, secrets.yml etc. containing real values."),
     Rule("SEC-004", "security", "Secret left in git history", "high",

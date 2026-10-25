@@ -136,3 +136,18 @@ def test_two_rules_at_same_location_merged_keeping_more_severe():
     kept, notes = verify_findings(state_with(a, b, c, read={"pyproject.toml"}), read_text)
     assert [f.id for f in kept] == ["F2", "F3"]
     assert notes[-1].action == "merged" and notes[-1].finding_id == "F1"
+
+
+def test_findings_implied_by_no_ci_are_dropped():
+    no_ci = finding("F1", rule="CI-001", file=None, line=None, category="ci_cd")
+    build = finding("F2", rule="BLD-001", file=None, line=None, category="build_release")
+    docker = finding("F3", rule="BLD-001", file="ci.yml", line=None, category="build_release")
+    kept, notes = verify_findings(state_with(no_ci, build, docker, read={"ci.yml"}), read_text)
+    assert [f.id for f in kept] == ["F1", "F3"]  # file-specific finding kept
+    assert notes[0].reason == "implied by CI-001 (no CI at all)"
+
+
+def test_build_finding_kept_when_ci_exists():
+    build = finding("F1", rule="BLD-001", file=None, line=None, category="build_release")
+    kept, _ = verify_findings(state_with(build), read_text)
+    assert [f.id for f in kept] == ["F1"]

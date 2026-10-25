@@ -20,21 +20,30 @@ from auditor.workspace import RepoWorkspace, parse_github_url
         "https://github.com/psf/requests.git",
         "https://github.com/psf/requests/tree/main",
         "  https://www.github.com/psf/requests  ",
+        # lenient forms (D33): always normalised to the HTTPS URL
+        "http://github.com/psf/requests",
+        "github.com/psf/requests",
+        "www.github.com/psf/requests/",
+        "HTTPS://GitHub.com/psf/requests",
+        "git@github.com:psf/requests.git",
+        "ssh://git@github.com/psf/requests.git",
     ],
 )
 def test_parse_valid_urls(url):
     ref = parse_github_url(url)
     assert (ref.owner, ref.name) == ("psf", "requests")
     assert ref.url == "https://github.com/psf/requests"
+    assert ref.clone_url == "https://github.com/psf/requests.git"
 
 
 @pytest.mark.parametrize(
     "url",
     [
         "",
-        "github.com/psf/requests",
-        "http://github.com/psf/requests",
-        "git@github.com:psf/requests.git",
+        "ftp://github.com/psf/requests",
+        "https://github.com.evil.com/psf/requests",  # look-alike host
+        "https://evil.com/github.com/psf/requests",  # GitHub path on another host
+        "git@gitlab.com:psf/requests.git",
         "https://gitlab.com/psf/requests",
         "https://github.com/psf",
         "https://github.com/-bad/requests",

@@ -238,7 +238,7 @@ def test_server_error_retried():
     ],
 )
 def test_client_errors_are_fatal(error, message):
-    llm, models, sleeps = _llm([error])
+    llm, models, sleeps = _llm([error], fallback_models=())  # no model left to try
     with pytest.raises(LLMError, match=message):
         llm.complete("s", [], TOOLS)
     assert len(models.calls) == 1 and sleeps == []
@@ -290,3 +290,20 @@ def test_thought_summaries_returned_as_reasoning():
     r = llm.complete("s", [], TOOLS)
     assert r.reasoning == "Workflows usually hold CI risks; inspect them first." and r.text == ""
     assert models.calls[0]["config"].thinking_config.include_thoughts is True
+
+
+def test_model_not_found_falls_back_to_next_model():
+    llm, models, sleeps = _llm(
+        [_client_error(404, "models/gemini-x is not found"), _response([types.Part(text="ok")])]
+    )
+    r = llm.complete("s", [], TOOLS)
+    assert r.text == "ok" and sleeps == []
+    assert [c["model"] for c in models.calls] == ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+    assert llm.model_switches == [
+        "gemini-3.5-flash-lite -> gemini-3.1-flash-lite (not found (404))"
+    ]
+
+
+def test_fallback_chain_order():
+    llm, _, _ = _llm([])
+    assert llm.fallback_models == ["gemini-3.1-flash-lite", "gemini-3.6-flash"]

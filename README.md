@@ -73,10 +73,11 @@ Notes:
   shell; empty values in `.env` are ignored (so an untouched copy of `.env.example` never hides a
   key you exported). To switch provider for one run, edit `.env` or use a clean shell without
   `.env`.
-- **Gemini free tier:** quotas are per model and per day. If the default model's daily quota is
-  used up (or it is overloaded), the agent automatically switches to `gemini-3.1-flash-lite` for
-  the rest of the run. `gemini-3.6-flash` works too but its free quota (20 requests/day) is below
-  one audit.
+- **Gemini free tier:** quotas are per model and per day. If the current model's daily quota is
+  used up, it is overloaded, or it no longer exists (renamed/retired), the agent automatically
+  moves along the chain `gemini-3.5-flash-lite` → `gemini-3.1-flash-lite` → `gemini-3.6-flash`
+  for the rest of the run (`gemini-3.6-flash` is last because its free quota is only 20
+  requests/day). Switches are logged and recorded in the trace.
 - Free-tier prompts may be used by Google to improve its products. Only public repositories are
   audited and secret values are redacted before anything is sent.
 - No GitHub token is needed: public repositories are cloned anonymously.
@@ -90,7 +91,7 @@ python agent.py --repo <github_repository_url> --output <report.json>
 
 | Option | Description |
 |---|---|
-| `--repo` | Public GitHub HTTPS URL (`https://github.com/owner/repo`, optional `.git`, trailing `/` or `/tree/<branch>`) |
+| `--repo` | Public GitHub repository: `https://github.com/owner/repo` (optional `.git`, trailing `/` or `/tree/<branch>`); `http://`, `github.com/owner/repo` and `git@github.com:owner/repo.git` are also accepted and normalised. The repository is always cloned anonymously over HTTPS. |
 | `--output` | Path of the JSON report (parent directories are created) |
 | `--max-steps` | Step budget (default 40 or `AUDITOR_MAX_STEPS`) |
 | `--model` | Model id for this run (overrides `AUDITOR_MODEL`) |
@@ -323,7 +324,8 @@ CLAUDE.md, AGENT.md, INSTRUCTION.md, PLAN.md, DECISION.md   Project documentatio
 | `Gemini API key was rejected` | Key typo or revoked key; create a new one in AI Studio |
 | `Gemini free-tier daily quota exhausted ... for every configured model` | Quotas reset at midnight Pacific time; use another key, or `AUDITOR_PROVIDER=anthropic` |
 | `repository not found or not public` | Check the URL; private repositories are not supported |
-| `Unsupported repository URL` | Use `https://github.com/<owner>/<repo>` |
+| `Unsupported repository URL` | Use `https://github.com/<owner>/<repo>` (only github.com is supported) |
+| `Gemini model ... was not found (404) and no fallback model is available` | Google renamed its models; set `AUDITOR_MODEL` to a current free model id from <https://ai.google.dev/gemini-api/docs/pricing> |
 | Slow runs / `retrying` warnings | Free-tier rate limits or overload; the agent waits and retries automatically |
 
 ## 12. Limitations
@@ -332,6 +334,8 @@ CLAUDE.md, AGENT.md, INSTRUCTION.md, PLAN.md, DECISION.md   Project documentatio
   judged from configuration, not by running anything.
 - Shallow history (50 commits): older history is not inspected; the trace says so.
 - Remote GitHub settings (branch protection, repository secrets, required reviews) are invisible.
-- The free Gemini model is small; results vary somewhat between runs. A stronger model (e.g.
-  `AUDITOR_PROVIDER=anthropic`) is a one-line change.
+- The free Gemini model is small: precision is high, but on large unfamiliar codebases it may
+  report only a subset of the real issues, and which subset varies between runs. A stronger model
+  (e.g. `AUDITOR_PROVIDER=anthropic`, or another `AUDITOR_MODEL`) is the main lever for recall and
+  is a one-line change.
 - Public GitHub repositories only.

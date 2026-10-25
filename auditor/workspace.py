@@ -47,18 +47,25 @@ def parse_github_url(raw: str) -> RepoRef:
     """Validate a public GitHub HTTPS URL and return its owner/name (D2).
 
     Accepts ``https://github.com/<owner>/<repo>`` with optional ``.git``, trailing slash,
-    or extra path such as ``/tree/<branch>``. Everything else is rejected before any
-    network or git call, which also prevents argument injection into ``git``.
+    or extra path such as ``/tree/<branch>``; also, leniently, ``http://``, no scheme
+    (``github.com/owner/repo``) and the SSH form ``git@github.com:owner/repo.git``. The repo
+    is always cloned over anonymous HTTPS. Other hosts are rejected before any network or
+    git call, which also prevents argument injection into ``git`` (D2, D33).
     """
     if not isinstance(raw, str) or not raw.strip():
         raise InvalidInputError("Repository URL is empty.")
     url = raw.strip()
 
-    match = re.match(r"^https://(?:www\.)?github\.com/([^/?#]+)/([^/?#]+)(?:[/?#].*)?$", url)
+    match = re.match(
+        r"^(?:(?:https?://)?(?:www\.)?github\.com/|git@github\.com:|ssh://git@github\.com/)"
+        r"([^/?#:]+)/([^/?#]+)(?:[/?#].*)?$",
+        url,
+        re.IGNORECASE,
+    )
     if not match:
         raise InvalidInputError(
             f"Unsupported repository URL: {url!r}. "
-            "Expected a public GitHub HTTPS URL like https://github.com/<owner>/<repo>."
+            "Expected a public GitHub URL like https://github.com/<owner>/<repo>."
         )
 
     owner, name = match.group(1), match.group(2)

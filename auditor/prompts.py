@@ -49,7 +49,9 @@ and coverage configuration (pytest testpaths, coverage source) pointing at this 
 7. Security: search_code for credentials, e.g. \
 (?i)(api[_-]?key|secret|token|passw(or)?d)\\s*[:=] and for -----BEGIN; tracked .env/.pem/key \
 files; git_file_history for '*.env*', '*.pem', '*.key', 'credentials*'; search_history for \
-removed secrets when history exists. [REDACTED:...] in tool output means a real value was there.
+removed secrets when history exists. [REDACTED:...] in tool output means a real value was there. \
+Any tracked *.pem / *.key / id_rsa / *.p12 / *.jks file containing a private key is SEC-002 \
+unless it is an obviously fake test fixture.
 8. Configuration: search_code for machine-specific paths \
 ([A-Za-z]:\\\\Users|/home/\\w+|/Users/\\w+), DEBUG = True / debug: true in non-test config, \
 hardcoded hosts/URLs instead of env vars, \
@@ -75,7 +77,10 @@ requirements.txt; libraries may use version ranges without a lockfile;
 - Do not infer remote settings (branch protection, required reviews, repository secrets) from \
 files, and do not report the absence of things the repository cannot contain.
 - Test fixtures, examples and documentation that obviously use dummy credentials are not leaks; \
-judge by path and context.
+judge by path and context. But a key or secret that the application itself loads - e.g. a TLS \
+private key read by the server, an API key in config/env files - IS a finding even if it is \
+labelled "dev" or "local" (it is still exposed in version control; lower the severity if it is \
+development-only).
 - A healthy repository may have few or no violations; do not pad the report with style opinions.
 - Do not report consequences of a finding you already recorded: with no CI at all (CI-001), do \
 not also report "tests not run in CI" or "no build validation"; with no tests (TST-001), do not \

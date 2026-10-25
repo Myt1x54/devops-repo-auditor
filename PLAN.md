@@ -23,6 +23,7 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
 | S13 | Evaluation fixtures (A/B/C repos) & precision/recall tuning | ✅ |
 | S14 | README, sample_report.json, final polish | ✅ |
 | S15 | Publish to public GitHub | ✅ |
+| S16 | Post-review hardening: recall on keys/secrets, model fallback, lenient URLs | ✅ |
 
 ---
 
@@ -172,3 +173,15 @@ verify** before starting the next step. Decisions are in [DECISION.md](DECISION.
   committed. User submits the URL.
 - Done: public repo https://github.com/Myt1x54/devops-repo-auditor, history scanned clean, required
   files present, CI green. Decisions: D32.
+
+## S16 — Post-review hardening
+- Found by the pre-submission review (unseen repo OWASP/NodeGoat): a committed private key loaded
+  by the app and a hardcoded API key in dev config were not reported.
+- Tighten SEC-001/SEC-002 guidance and the prompt: secrets/keys the application itself loads are
+  findings even when labelled "dev"; only obviously fake test fixtures are excluded.
+- Gemini: if the model is not found (renamed/retired), fall back to the next free model.
+- Accept lenient GitHub URL forms (http://, no scheme, SSH `git@github.com:owner/repo.git`).
+- **Verify:** tests green; re-measure fixtures (precision/recall) and unseen repos (requests,
+  NodeGoat).
+- Done: fixes 1-4 of D33; 324 tests; NodeGoat private key found in both runs, requests 0 FP,
+  fixtures 1.00/1.00 and 0.95/1.00. Decisions: D33.
